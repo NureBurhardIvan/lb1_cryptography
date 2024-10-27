@@ -1,0 +1,104 @@
+﻿@using lb1_cryptography.Models.Enums
+@{
+    ViewBag.Title = "Des";
+    Layout = "_Layout";
+}
+<div class="container mt-2">
+    <h1 class="text-center mb-4">DES Encryption</h1>
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="mb-3">
+                <label for="inputText" class="form-label">
+                    Input Text
+                </label>
+                <input type="text" class="form-control" id="inputText" placeholder="Enter text to encrypt">
+            </div>
+            <div class="mb-3">
+                <label for="inputKey" class="form-label">Key</label>
+                <input type="text" class="form-control" id="inputKey" placeholder="Enter 8-character key" maxlength="8">
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+                <button id="encryptBtn" class="btn btn-outlineprimary">Encrypt</button>
+                <button id="decryptBtn" class="btn btn-outlineprimary">Decrypt</button>
+            </div>
+            <div class="result-section">
+                <h2>Result</h2>
+                <div class="card">
+                    <div class="card-header">
+                        Output
+                    </div>
+                    <div class="card-body">
+                        <p id="outputText" class="fw-bold">Encrypted/Decrypted Text: </p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Entropy Before</h4>
+                                <ul id="entropyBeforeList" class="list-unstyled"></ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Entropy After</h4>
+                                <ul id="entropyAfterList" class="list-unstyled"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+     document.addEventListener('DOMContentLoaded', function () {
+        const encryptBtn = document.getElementById('encryptBtn');
+        const decryptBtn = document.getElementById('decryptBtn');
+        encryptBtn.addEventListener('click', function () {
+            const inputText = document.getElementById('inputText').value;
+            const key = document.getElementById('inputKey').value;
+            const body = {
+                inputText: inputText,
+                key: key
+            };
+            $.ajax({ 
+                url: '@Url.Action("ProcessDes", "Des")?operationKind=@((byte)OperationKind.Encrypt)',
+                type: 'POST',
+                data: JSON.stringify(body),
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: (data) => {
+                    document.getElementById('outputText').textContent = data.resultText;
+                    updateEntropyList('entropyBeforeList', data.entropyBefore);
+                    updateEntropyList('entropyAfterList', data.entropyAfter);
+                }
+            });
+        });
+        decryptBtn.addEventListener('click', function () {
+            const inputText = document.getElementById('inputText').value;
+            const key = document.getElementById('inputKey').value;
+            const body = {
+                 inputText: inputText,
+                 key: key
+            };
+            $.ajax({
+                url: '@Url.Action("ProcessDes", "Des")' + '?operationKind=@((byte)OperationKind.Decrypt)',
+                type: 'POST',
+                data: JSON.stringify(body),
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: processResult
+            });
+        });
+        function processResult(response) {
+            // Set the decoded string as the text content
+            document.getElementById('outputText').textContent = response.resultText;
+            updateEntropyList('entropyBeforeList', response.entropyBefore);
+            updateEntropyList('entropyAfterList', response.entropyAfter);
+        }
+        function updateEntropyList(listId, entropyArray) {
+            const listElement = document.getElementById(listId);
+            listElement.innerHTML = ''; // Clear previous items
+            entropyArray.forEach((entropy, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Round ${index + 1}:${entropy}`;
+                listElement.appendChild(listItem);
+            });
+        }
+     });
+</script>
